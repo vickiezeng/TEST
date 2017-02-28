@@ -1,0 +1,380 @@
+package com.hp.snap.evaluation.imdb.business.cases;
+
+import java.io.File;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Iterator;
+import java.util.Random;
+
+import com.hp.usage.array.BooleanArray;
+import com.hp.usage.array.BooleanMutableArray;
+import com.hp.usage.array.ByteArray;
+import com.hp.usage.array.ByteMutableArray;
+import com.hp.usage.array.CharArray;
+import com.hp.usage.array.CharMutableArray;
+import com.hp.usage.array.DoubleArray;
+import com.hp.usage.array.DoubleMutableArray;
+import com.hp.usage.array.FloatArray;
+import com.hp.usage.array.FloatMutableArray;
+import com.hp.usage.array.IntegerArray;
+import com.hp.usage.array.IntegerMutableArray;
+import com.hp.usage.array.LongArray;
+import com.hp.usage.array.LongMutableArray;
+import com.hp.usage.array.ShortArray;
+import com.hp.usage.array.ShortMutableArray;
+import com.hp.usage.array.StringArray;
+import com.hp.usage.array.StringMutableArray;
+import com.hp.usage.datastruct.transform.json.JsonIntrospectionSerializer;
+import com.hp.usage.datastruct.transform.json.JsonSerializer;
+import com.hp.usage.nme.ArrayAllocator;
+import com.hp.usage.nme.ArrayType;
+import com.hp.usage.nme.AttributeDescriptor;
+import com.hp.usage.nme.AttributeRef;
+import com.hp.usage.nme.NME;
+import com.hp.usage.nme.NMEArray;
+import com.hp.usage.nme.NMEFactory;
+import com.hp.usage.nme.NMEImplRegistrarHelper;
+import com.hp.usage.nme.NMEManager;
+import com.hp.usage.nme.NMEMutableArray;
+import com.hp.usage.nme.NMESchema;
+import com.hp.usage.nme.NMEType;
+import com.hp.usage.nme.PrimitiveType;
+import com.hp.usage.nme.StringType;
+import com.hp.usage.nme.Type;
+import com.hp.usage.nme.schemaloader.NMESchemaLoader;
+
+public class NMEDataGenerator {
+    public static final int    DEFAULT_STRING_LENGTH  = 48;
+    public static final int    DEFAULT_ARRAY_LENGTH   = 64;
+    public static final String STRING_ALPHABET        = "ABCDEFGHIJKLMNOPQRSTUVWXYZ  abcdefghijklmnopqrstuvwxyz  01234567890  _-";
+    public static final int    STRING_ALPHABET_LENGTH = STRING_ALPHABET.length();
+
+    private final Random         random;
+    private final NMEFactory     nmeFactory;
+    private final ArrayAllocator arrayAllocator;
+    private       int            stringLength;
+    private       int            arrayLength;
+
+    public NMEDataGenerator(NMEFactory nmeFactory, int stringLength, int arrayLength) {
+        this.nmeFactory = nmeFactory;
+        this.stringLength = stringLength;
+        this.arrayLength = arrayLength;
+        this.arrayAllocator = nmeFactory.getArrayAllocator();
+        this.random = new Random();
+    }
+
+    public NMEDataGenerator(NMEFactory nmeFactory) {
+        this(nmeFactory, DEFAULT_STRING_LENGTH, DEFAULT_ARRAY_LENGTH);
+    }
+
+    public NME nextNME(NMEType nmeType) {
+        NME nme = nmeFactory.newNME(nmeType);
+
+        @SuppressWarnings("unchecked")
+        Iterator<AttributeDescriptor> attributes = nmeType.getAttributes();
+        while (attributes.hasNext()) {
+            AttributeDescriptor attribute = attributes.next();
+            AttributeRef attributeRef = nme.getAttributeRef(attribute.getName());
+            Type type = attribute.getType();
+            if (type.isStructType()) {
+                nme.setStruct(attributeRef, nextNME((NMEType) type));
+            } else {
+                switch (type.getID()) {
+                    case PrimitiveType.BYTE_ID:
+                        nme.setByte(attributeRef, nextByte());
+                        break;
+
+                    case PrimitiveType.SHORT_ID:
+                        nme.setShort(attributeRef, nextShort());
+                        break;
+
+                    case PrimitiveType.INT_ID:
+                        nme.setInt(attributeRef, nextInt());
+                        break;
+
+                    case PrimitiveType.LONG_ID:
+                        nme.setInt(attributeRef, nextInt());
+                        break;
+
+                    case PrimitiveType.FLOAT_ID:
+                        nme.setFloat(attributeRef, nextFloat());
+                        break;
+
+                    case PrimitiveType.DOUBLE_ID:
+                        nme.setDouble(attributeRef, nextDouble());
+                        break;
+
+                    case PrimitiveType.CHAR_ID:
+                        nme.setChar(attributeRef, nextChar());
+                        break;
+
+                    case PrimitiveType.BOOLEAN_ID:
+                        nme.setBoolean(attributeRef, nextBoolean());
+                        break;
+
+                    case StringType.STRING_ID:
+                        nme.setString(attributeRef, nextString());
+                        break;
+
+                    case ArrayType.BYTE_ARRAY_ID:
+                        nme.setArray(attributeRef, nextByteArray());
+                        break;
+
+                    case ArrayType.SHORT_ARRAY_ID:
+                        nme.setArray(attributeRef, nextShortArray());
+                        break;
+
+                    case ArrayType.INT_ARRAY_ID:
+                        nme.setArray(attributeRef, nextIntegerArray());
+                        break;
+
+                    case ArrayType.LONG_ARRAY_ID:
+                        nme.setArray(attributeRef, nextLongArray());
+                        break;
+
+                    case ArrayType.FLOAT_ARRAY_ID:
+                        nme.setArray(attributeRef, nextFloatArray());
+                        break;
+
+                    case ArrayType.DOUBLE_ARRAY_ID:
+                        nme.setArray(attributeRef, nextDoubleArray());
+                        break;
+
+                    case ArrayType.CHAR_ARRAY_ID:
+                        nme.setArray(attributeRef, nextCharArray());
+                        break;
+
+                    case ArrayType.BOOLEAN_ARRAY_ID:
+                        nme.setArray(attributeRef, nextBooleanArray());
+                        break;
+
+                    case ArrayType.STRING_ARRAY_ID:
+                        nme.setArray(attributeRef, nextStringArray());
+                        break;
+
+                    case ArrayType.STRUCT_ARRAY_ID:
+                        nme.setArray(attributeRef, nextNMEArray((ArrayType) type));
+                        break;
+
+                    default:
+                        throw new RuntimeException("Unsupported type: " + type);
+                }
+            }
+        }
+
+        return nme;
+    }
+
+    public NMEArray nextNMEArray(ArrayType arrayType) {
+        return nextNMEArray(arrayType, arrayLength);
+    }
+
+    public NMEArray nextNMEArray(ArrayType arrayType, int length) {
+        NMEMutableArray array = arrayAllocator.newNMEArray(length);
+        NMEType elementType = (NMEType) arrayType.getElementType();
+        for (int i = 0; i < length; i++) {
+            array.add(nextNME(elementType));
+        }
+        return array;
+    }
+
+    public int getStringLength() {
+        return stringLength;
+    }
+
+    public void setStringLength(int stringLength) {
+        this.stringLength = stringLength;
+    }
+
+    public int getArrayLength() {
+        return arrayLength;
+    }
+
+    public void setArrayLength(int arrayLength) {
+        this.arrayLength = arrayLength;
+    }
+
+    public ByteArray nextByteArray() {
+        return nextByteArray(arrayLength);
+    }
+
+    public ByteArray nextByteArray(int length) {
+        ByteMutableArray array = arrayAllocator.newByteArray(length);
+        for (int i = 0; i < length; i++) {
+            array.add(nextByte());
+        }
+        return array;
+    }
+
+    public ShortArray nextShortArray() {
+        return nextShortArray(arrayLength);
+    }
+
+    public ShortArray nextShortArray(int length) {
+        ShortMutableArray array = arrayAllocator.newShortArray(length);
+        for (int i = 0; i < length; i++) {
+            array.add(nextShort());
+        }
+        return array;
+    }
+
+    public IntegerArray nextIntegerArray() {
+        return nextIntegerArray(arrayLength);
+    }
+
+    public IntegerArray nextIntegerArray(int length) {
+        IntegerMutableArray array = arrayAllocator.newIntegerArray(length);
+        for (int i = 0; i < length; i++) {
+            array.add(nextInt());
+        }
+        return array;
+    }
+
+    public LongArray nextLongArray() {
+        return nextLongArray(arrayLength);
+    }
+
+    public LongArray nextLongArray(int length) {
+        LongMutableArray array = arrayAllocator.newLongArray(length);
+        for (int i = 0; i < length; i++) {
+            array.add(nextLong());
+        }
+        return array;
+    }
+
+    public FloatArray nextFloatArray() {
+        return nextFloatArray(arrayLength);
+    }
+
+    public FloatArray nextFloatArray(int length) {
+        FloatMutableArray array = arrayAllocator.newFloatArray(length);
+        for (int i = 0; i < length; i++) {
+            array.add(nextFloat());
+        }
+        return array;
+    }
+
+    public DoubleArray nextDoubleArray() {
+        return nextDoubleArray(arrayLength);
+    }
+
+    public DoubleArray nextDoubleArray(int length) {
+        DoubleMutableArray array = arrayAllocator.newDoubleArray(length);
+        for (int i = 0; i < length; i++) {
+            array.add(nextDouble());
+        }
+        return array;
+    }
+
+    public CharArray nextCharArray() {
+        return nextCharArray(arrayLength);
+    }
+
+    public CharArray nextCharArray(int length) {
+        CharMutableArray array = arrayAllocator.newCharArray(length);
+        for (int i = 0; i < length; i++) {
+            array.add(nextChar());
+        }
+        return array;
+    }
+
+    public BooleanArray nextBooleanArray() {
+        return nextBooleanArray(arrayLength);
+    }
+
+    public BooleanArray nextBooleanArray(int length) {
+        BooleanMutableArray array = arrayAllocator.newBooleanArray(length);
+        for (int i = 0; i < length; i++) {
+            array.add(nextBoolean());
+        }
+        return array;
+    }
+
+    public StringArray nextStringArray() {
+        return nextStringArray(arrayLength);
+    }
+
+    public StringArray nextStringArray(int length) {
+        StringMutableArray array = arrayAllocator.newStringArray(length);
+        for (int i = 0; i < length; i++) {
+            array.add(nextString());
+        }
+        return array;
+    }
+
+    public byte nextByte() {
+        return (byte) random.nextInt();
+    }
+
+    public short nextShort() {
+        return (short) random.nextInt();
+    }
+
+    public int nextInt() {
+        return random.nextInt();
+    }
+
+    public long nextLong() {
+        return random.nextLong();
+    }
+
+    public boolean nextBoolean() {
+        return random.nextBoolean();
+    }
+
+    public float nextFloat() {
+        return random.nextFloat();
+    }
+
+    public double nextDouble() {
+        return random.nextDouble();
+    }
+
+    public String nextString() {
+        return nextString(stringLength);
+    }
+
+    public char nextChar() {
+        return STRING_ALPHABET.charAt(random.nextInt(STRING_ALPHABET_LENGTH));
+    }
+
+    public String nextString(int length) {
+        char[] chars = new char[length];
+        for (int i = 0; i < chars.length; i++) {
+            chars[i] = nextChar();
+
+        }
+        return new String(chars);
+    }
+    
+    
+	static {
+		NMEImplRegistrarHelper.registerDefault();
+		loadSchema();
+	}
+
+	public static void loadSchema() {
+		try {
+			NMESchema nmeSchema = NMEManager.getNMESchema();
+			new NMESchemaLoader().loadXSDSchema(getResource("SerializerGeneratorTest.xsd"), nmeSchema);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	protected static File getResource(String name) throws URISyntaxException {
+		URL url = C7N1Query.class.getClassLoader().getResource(name);
+		File file = new File(url.toURI());
+		return file;
+	}
+    
+    public static final void main(String[] args) {
+    	NMESchema nmeSchema = NMEManager.getNMESchema();
+		NMEFactory nmeFactory = NMEManager.getNMEFactory();
+        JsonSerializer jsonSerializer = new JsonIntrospectionSerializer("NME_JSerializer:RootType");
+
+        NME sourceNme = new NMEDataGenerator(nmeFactory, 5, 2).nextNME(nmeSchema.getNMEType("NME_JSerializer:RootType"));
+        String json = jsonSerializer.write(sourceNme);
+        System.out.println(json);
+    }
+}

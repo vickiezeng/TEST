@@ -1,0 +1,82 @@
+<?xml version='1.0' encoding='GB2312'?>
+<project name="Build IMDB evaluation package" default="rebuild" basedir=".">
+	<!-- ========== Compiler Defaults ========================================= -->
+
+	<property name="deploy" value="out"/>
+	<property name="module.version" value="2.0"/>
+	<property name="imdbVendor" value="Couchbase"/>
+    <property name="module.name" value="HPE-STF-${imdbVendor}"/>
+
+	<property name="deploy.classes" value="${deploy}/classes"/>
+	<property name="source.src" value="src"/>
+
+	<!-- Construct compile classpath -->
+	<path id="compile.classpath">
+		<pathelement location="${deploy.classes}"/>
+		<fileset dir="lib">
+			<include name="**/*.jar"/>
+		</fileset>
+	</path>
+	
+	<target name="init" description="Initialize and evaluate conditionals">
+		<mkdir dir="${deploy.classes}"/>
+		<mkdir dir="${deploy}"/>
+		<mkdir dir="${deploy}/lib"/>
+		<mkdir dir="${deploy}/conf"/>
+		<mkdir dir="${deploy}/logs"/>
+	</target>
+
+	<target name="compile" depends="init" description="Compile...">
+		
+		<javac srcdir="${source.src}"
+			   destdir="${deploy.classes}"
+			   debug="true"
+			   debuglevel="lines,source"
+			   deprecation="false"
+			   optimize="false"
+               encoding="UTF-8"
+			   fork="true" target="1.7"
+				>
+			<classpath refid="compile.classpath"/>
+		</javac>
+		<copy todir="${deploy.classes}" overwrite="true" >
+			<fileset dir="${source.src}">
+				<exclude name="**/*.java"/>
+			</fileset>
+		</copy>
+		
+	</target>
+
+	<target name="clean" description="Clean build and distribution directories">
+		<delete dir="${deploy}" failonerror="false"/>
+		<delete dir="logs" failonerror="false"/>
+	</target>
+
+	<target name="jar" depends="compile" description="Create jar">
+		<jar jarfile="${deploy}/lib/${module.name}-V${module.version}.jar" basedir="${deploy.classes}">
+			<manifest>
+				<attribute name="Product" value="HP SNAP IMDB Evaluation Test Framework for ${imdbVendor}"/>
+				<attribute name="Version" value="${module.version}"/>
+			</manifest>
+		</jar>
+		<copy todir="${deploy}/lib" overwrite="false">
+			<fileset dir="lib"/>
+		</copy>
+	</target>
+
+	<target name="env" description="Create runnable env">
+		<copy todir="${deploy}" overwrite="true">
+			<fileset dir="." includes="*.sh,*.cmd,*.bat"/>
+		</copy>
+        <copy todir="${deploy}/conf" overwrite="true">
+      			<fileset dir="conf" includes="*.properties"/>
+      		</copy>
+	</target>
+
+	<target name="rebuild">
+		<antcall target="clean"/>
+		<antcall target="env"/>
+		<antcall target="jar"/>
+		<delete dir="${deploy.classes}"  failonerror="false"/>
+	</target>
+</project>

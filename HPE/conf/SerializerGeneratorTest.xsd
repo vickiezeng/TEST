@@ -1,0 +1,55 @@
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+        targetNamespace="http://www.hp.com/usage/nme/nmeschema/NME_JSerializer"
+        xmlns:this="http://www.hp.com/usage/nme/nmeschema/NME_JSerializer"
+        xmlns:nme="http://www.hp.com/usage/nme/nmeschema">
+
+    <import namespace="http://www.hp.com/usage/nme/nmeschema"/>
+
+    <complexType name="ArraysType">
+        <sequence>
+            <element name="bytes" type="nme:byte-array"/>
+            <element name="shorts" type="nme:short-array"/>
+            <element name="integers" type="nme:int-array"/>
+            <element name="longs" type="nme:long-array"/>
+            <element name="floats" type="nme:float-array"/>
+            <element name="doubles" type="nme:double-array"/>
+            <element name="chars" type="nme:char-array"/>
+            <element name="booleans" type="nme:boolean-array"/>
+            <element name="strings" type="nme:string-array"/>
+            <element name="compexTypes">
+                <complexType>
+                    <sequence>
+                        <element type="this:NestedType" name="value" maxOccurs="unbounded"/>
+                    </sequence>
+                </complexType>
+            </element>
+        </sequence>
+    </complexType>
+
+    <complexType name="NestedType">
+        <sequence>
+            <element name="text" type="nme:string"/>
+            <element name="character" type="nme:char"/>
+            <element name="decimal" type="nme:int"/>
+            <element name="floating" type="nme:double"/>
+            <element name="logical" type="nme:boolean"/>
+        </sequence>
+    </complexType>
+
+    <complexType name="RootType">
+        <sequence>
+            <element name="text" type="nme:string"/>
+            <element name="decimal" type="nme:int"/>
+            <element name="floating" type="nme:double"/>
+            <element name="complex" type="this:NestedType"/>
+            <element name="primitiveArrays" type="this:ArraysType"/>
+            <element name="complexArray">
+                <complexType>
+                    <sequence>
+                        <element type="this:NestedType" name="value" maxOccurs="unbounded"/>
+                    </sequence>
+                </complexType>
+            </element>
+        </sequence>
+    </complexType>
+</schema>
