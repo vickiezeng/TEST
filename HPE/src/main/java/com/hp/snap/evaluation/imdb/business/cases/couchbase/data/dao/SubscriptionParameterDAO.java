@@ -9,7 +9,7 @@ import com.hp.snap.evaluation.imdb.business.cases.couchbase.data.SubscriptionPar
 /**
  * @author Yang, Lin
  */
-public class SubscriptionParameterDAO extends AbstractDAO_vickie<SubscriptionParameter> {
+public class SubscriptionParameterDAO extends AbstractDAO<SubscriptionParameter> {
 	public SubscriptionParameterDAO(Bucket bucket){
 		super(bucket);
 	}

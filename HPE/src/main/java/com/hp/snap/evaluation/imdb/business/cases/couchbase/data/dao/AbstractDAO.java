@@ -1,6 +1,5 @@
 package com.hp.snap.evaluation.imdb.business.cases.couchbase.data.dao;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import com.couchbase.client.core.BackpressureException;
@@ -29,16 +28,13 @@ public abstract class AbstractDAO<T extends PrimaryKey> {
 	
 	private static final class FindPkeyAction implements Observer<PrimaryKey> {
 		private final AsyncResponse run;
-		private CountDownLatch latch;
 
-		private FindPkeyAction(AsyncResponse run,CountDownLatch latch) {
+		private FindPkeyAction(AsyncResponse run) {
 			this.run = run;
-			this.latch=latch;
 		}
 
 		@Override
 		public void onCompleted() {
-			latch.countDown();
 		}
 
 		@Override
@@ -48,7 +44,6 @@ public abstract class AbstractDAO<T extends PrimaryKey> {
 		    	run.future = ErrorResponse;
 		    	run.run();	
 			}
-			latch.countDown();
 		}
 
 		@Override
@@ -60,25 +55,21 @@ public abstract class AbstractDAO<T extends PrimaryKey> {
 		}
 	}
 	
-	private static final class UpdateAction implements Observer<PrimaryKey> {
+	private static final class UpdateAction implements Observer<ByteJsonDocument> {
 		private final long start;
 		private final int type;
-//		private final PrimaryKey instance;
+		private final PrimaryKey instance;
 		private final AsyncResponse run;
-		private  CountDownLatch latch;
 
-		private UpdateAction(long start, int type, AsyncResponse run,CountDownLatch latch) {
+		private UpdateAction(long start, int type, PrimaryKey instance, AsyncResponse run) {
 			this.start = start;
 			this.type = type;
-//			this.instance = instance;
+			this.instance = instance;
 			this.run = run;
-			this.latch=latch;
-			
 		}
 
 		@Override
 		public void onCompleted() {
-			latch.countDown();
 		}
 
 		@Override
@@ -88,18 +79,15 @@ public abstract class AbstractDAO<T extends PrimaryKey> {
 		    	run.future = ErrorResponse;
 		    	run.run();	
 			}
-			latch.countDown();
 		}
 
 		@Override
-		public void onNext(PrimaryKey t) {
+		public void onNext(ByteJsonDocument t) {
 			if(null != run){
 				//no need converting t to object again due to update/delete.
-		    	run.future = t;
-//				run.future
+		    	run.future = instance;
 		    	run.run();	
 			}
-			
 		}
 	}
 
@@ -117,13 +105,12 @@ public abstract class AbstractDAO<T extends PrimaryKey> {
 	}
 	
     public void insert(final T instance, final AsyncResponse run) {
-    	
     	if(instance.getId() == null || instance.getId().trim().length() == 0) {
 			String id = getNextId(instance.getClass(), 1, 100);
 			instance.setId(id);
 		}
     	ByteJsonDocument docIn = ByteJsonDocument.create(instance.getId(), converter.toBytes(instance));
-    	CountDownLatch latch = new CountDownLatch(1);
+    	
     	Observable<ByteJsonDocument> ov = null;
     	if (persistTo != null && replicateTo != null) {
     		ov = bucket.async().insert(docIn, persistTo, replicateTo).retryWhen(RetryBuilder
@@ -135,21 +122,7 @@ public abstract class AbstractDAO<T extends PrimaryKey> {
     			    .delay(getDelaySetting()).build());;
     	}
     	
-    	ov.map(new Func1<ByteJsonDocument, PrimaryKey>() {
-            @Override
-            public PrimaryKey call(ByteJsonDocument i) {
-            	PrimaryKey result = fromByteJsonDocument(i, instance.getClass());
-				result.setCas(i.cas());
-            	return result;
-            }
-        }).subscribe(new UpdateAction(0, 1, run,latch));
-    	try {
-			latch.await();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-    	
+    	ov.subscribe(new UpdateAction(0, 1, instance, run));
     }
 
 	private static Delay getDelaySetting() {
@@ -172,32 +145,17 @@ public abstract class AbstractDAO<T extends PrimaryKey> {
     public void update(final T instance, final AsyncResponse run) {
     	ByteJsonDocument docIn = ByteJsonDocument.create(instance.getId(), converter.toBytes(instance));
     	Observable<ByteJsonDocument> ov = null;
-    	CountDownLatch latch = new CountDownLatch(1);
     	if (persistTo != null && replicateTo != null) {
     		ov = bucket.async().upsert(docIn, persistTo, replicateTo).retryWhen(RetryBuilder
     			    .anyOf(BackpressureException.class).max(3)
-    			    .delay(getDelaySetting()).build());
+    			    .delay(getDelaySetting()).build());;
     	} else {
     		ov = bucket.async().upsert(docIn).retryWhen(RetryBuilder
     			    .anyOf(BackpressureException.class).max(3)
     			    .delay(getDelaySetting()).build());
     	}
     	
-    	ov.map(new Func1<ByteJsonDocument, PrimaryKey>() {
-            @Override
-            public PrimaryKey call(ByteJsonDocument i) {
-            	PrimaryKey result = fromByteJsonDocument(i, instance.getClass());
-				result.setCas(i.cas());
-            	return result;
-            }
-        }).subscribe(new UpdateAction(0, 2, run,latch));
-    	
-        try {
-			latch.await();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+    	ov.subscribe(new UpdateAction(0, 2, instance, run));
     }
     
     public void update(final T instance) {
@@ -217,31 +175,17 @@ public abstract class AbstractDAO<T extends PrimaryKey> {
     public void delete(final T instance, final AsyncResponse run) {
     	ByteJsonDocument doc = ByteJsonDocument.create(instance.getId(), converter.toBytes(instance));
     	Observable<ByteJsonDocument> ov = null;
-    	CountDownLatch latch = new CountDownLatch(1);
     	if (persistTo != null && replicateTo != null) {
     		ov = bucket.async().remove(doc, persistTo, replicateTo).retryWhen(RetryBuilder
     			    .anyOf(BackpressureException.class).max(3)
-    			    .delay(getDelaySetting()).build());
+    			    .delay(getDelaySetting()).build());;
     	} else {
     		ov = bucket.async().remove(doc).retryWhen(RetryBuilder
     			    .anyOf(BackpressureException.class).max(3)
-    			    .delay(getDelaySetting()).build());
+    			    .delay(getDelaySetting()).build());;
     	}
     	
-    	ov.map(new Func1<ByteJsonDocument, PrimaryKey>() {
-            @Override
-            public PrimaryKey call(ByteJsonDocument i) {
-            	PrimaryKey result = fromByteJsonDocument(i, instance.getClass());
-				result.setCas(i.cas());
-            	return result;
-            }
-        }).subscribe(new UpdateAction(0, 3, run,latch));
-    	try {
-			latch.await();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+    	ov.subscribe(new UpdateAction(0, 3, instance, run));
     }
     
     public void delete(final T instance) {
@@ -258,7 +202,6 @@ public abstract class AbstractDAO<T extends PrimaryKey> {
      * @param id
      */
     public void findByPrimaryKey(String id, final Class<? extends PrimaryKey> mapping, final AsyncResponse<T> run) {
-    	CountDownLatch latch = new CountDownLatch(1);
     	bucket.async().get(id, ByteJsonDocument.class).retryWhen(RetryBuilder
 			    .anyOf(BackpressureException.class).max(3)
 			    .delay(getDelaySetting()).build()).map(new Func1<ByteJsonDocument, PrimaryKey>() {
@@ -268,13 +211,7 @@ public abstract class AbstractDAO<T extends PrimaryKey> {
 						result.setCas(i.cas());
 		            	return result;
 		            }
-		        }).subscribe(new FindPkeyAction(run,latch));
-    	try {
-			latch.await();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		        }).subscribe(new FindPkeyAction(run));
     }
     
     public T findByPrimaryKey(String id, final Class<T> mapping) {
