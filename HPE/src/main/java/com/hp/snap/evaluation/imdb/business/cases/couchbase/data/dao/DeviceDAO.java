@@ -11,7 +11,7 @@ import com.hp.snap.evaluation.imdb.business.cases.couchbase.data.Device;
 /**
  * @author Yang, Lin
  */
-public class DeviceDAO extends AbstractDAO<Device> {
+public class DeviceDAO extends AbstractDAO_vickie<Device> {
 	public DeviceDAO(Bucket bucket){
 		super(bucket);
 	}

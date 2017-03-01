@@ -9,7 +9,7 @@ import com.hp.snap.evaluation.imdb.business.cases.couchbase.data.DeviceIdentifie
 /**
  * @author Yang, Lin
  */
-public class DeviceIdentifierDAO extends AbstractDAO<DeviceIdentifier> {
+public class DeviceIdentifierDAO extends AbstractDAO_vickie<DeviceIdentifier> {
 	public DeviceIdentifierDAO(Bucket bucket){
 		super(bucket);
 	}

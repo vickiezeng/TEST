@@ -9,7 +9,7 @@ import com.hp.snap.evaluation.imdb.business.cases.couchbase.data.Contact;
 /**
  * @author Yang, Lin
  */
-public class ContactDAO extends AbstractDAO<Contact> {
+public class ContactDAO extends AbstractDAO_vickie<Contact> {
 	public ContactDAO(Bucket bucket){
 		super(bucket);
 	}

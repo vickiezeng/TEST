@@ -14,7 +14,7 @@ import com.hp.snap.evaluation.imdb.business.common.CallService;
 /**
  * @author Yang, Lin
  */
-public class OcsSessionDAO extends AbstractDAO<OcsSession> {
+public class OcsSessionDAO extends AbstractDAO_vickie<OcsSession> {
 	
 	public OcsSessionDAO(Bucket bucket){
 		super(bucket);

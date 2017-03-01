@@ -9,7 +9,7 @@ import com.hp.snap.evaluation.imdb.business.cases.couchbase.data.SubscriberCount
 /**
  * @author Yang, Lin
  */
-public class SubscriberCounterDAO extends AbstractDAO<SubscriberCounter> {
+public class SubscriberCounterDAO extends AbstractDAO_vickie<SubscriberCounter> {
 	public SubscriberCounterDAO(Bucket bucket){
 		super(bucket);
 	}
