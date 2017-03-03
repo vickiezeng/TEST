@@ -14,7 +14,7 @@ import com.hp.snap.evaluation.imdb.business.common.CallService;
 /**
  * @author Yang, Lin
  */
-public class SubscriberDAO extends AbstractDAO_vickie<Subscriber> {
+public class SubscriberDAO extends AbstractDAO<Subscriber> {
 	
 	public SubscriberDAO(Bucket bucket){
 		super(bucket);

@@ -9,7 +9,7 @@ import com.hp.snap.evaluation.imdb.business.cases.couchbase.data.Account;
 /**
  * @author Yang, Lin
  */
-public class AccountDAO extends AbstractDAO_vickie<Account> {
+public class AccountDAO extends AbstractDAO<Account> {
 	
 	public AccountDAO(Bucket bucket){
 		super(bucket);
