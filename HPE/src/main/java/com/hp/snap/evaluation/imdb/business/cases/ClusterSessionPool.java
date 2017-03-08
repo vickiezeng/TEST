@@ -43,7 +43,7 @@ public class ClusterSessionPool {
 					+ " can be null!");
 		}
 		Builder b = DefaultCouchbaseEnvironment.builder();
-		b.requestBufferSize(1024*1024).responseBufferSize(1024*1024);
+//		b.requestBufferSize(1024*1024).responseBufferSize(1024*1024);
 		b.callbacksOnIoPool(true);
 		if (config.getProperty("cluster.Delay.fix") != null) {
 			long growby = Long.parseLong(config.getProperty("cluster.Delay.growby"));
